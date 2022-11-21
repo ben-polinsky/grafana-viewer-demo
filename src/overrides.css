@@ -1,0 +1,8 @@
+
+.panel-title-text {
+    color: white !important;
+}
+
+.sidemenu-icon::before{
+    content: "" !important;
+}

@@ -1,0 +1,48 @@
+{
+  "name": "mattbjordan-demo-1",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "grafana-toolkit plugin:build",
+    "test": "grafana-toolkit plugin:test",
+    "dev": "grafana-toolkit plugin:dev",
+    "watch": "grafana-toolkit plugin:dev --watch",
+    "sign": "grafana-toolkit plugin:sign",
+    "start": "yarn watch"
+  },
+  "author": "Matthew Jordan",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@grafana/data": "latest",
+    "@grafana/toolkit": "9.2.0",
+    "@grafana/ui": "latest",
+    "copy-webpack-plugin": "^11.0.0",
+    "emotion": "10.0.27",
+    "webpack-copy-plugin": "^0.0.4"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "dependencies": {
+    "@itwin/appui-abstract": "^3.3.5",
+    "@itwin/appui-layout-react": "^3.3.5",
+    "@itwin/appui-react": "^3.3.5",
+    "@itwin/browser-authorization": "0.5.1",
+    "@itwin/components-react": "^3.3.5",
+    "@itwin/core-common": "^3.3.5",
+    "@itwin/core-frontend": "^3.3.5",
+    "@itwin/core-geometry": "^3.3.5",
+    "@itwin/core-markup": "^3.3.5",
+    "@itwin/core-orbitgt": "^3.3.5",
+    "@itwin/core-quantity": "^3.3.5",
+    "@itwin/core-react": "^3.3.5",
+    "@itwin/imodel-components-react": "^3.3.5",
+    "@itwin/imodels-access-frontend": "2.1.1",
+    "@itwin/presentation-common": "^3.3.5",
+    "@itwin/presentation-frontend": "^3.3.5",
+    "@itwin/web-viewer-react": "3.0.9",
+    "@itwin/webgl-compatibility": "^3.3.5",
+    "process": "0.11.10",
+    "stream-browserify": "3.0.0"
+  }
+}
