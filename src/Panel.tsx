@@ -23,7 +23,7 @@ const lightGrey = ColorDef.fromString("rgba(245,245,245,.05)");
 
 const [iModel, setIModel] = React.useState<IModelConnection>();
 const [vp, setVp] = React.useState<ScreenViewport>();
-const colorMap: Record<string, Array<string>> = {
+const colorMap: Record<string, string[]> = {
   [ColorDef.red.toRgbaString()]: [],
   [ColorDef.blue.toRgbaString()]: [],
   [orange.toRgbaString()]: [],
@@ -41,7 +41,7 @@ const queryVar = replaceVariables("$selected")
        data.series.forEach(s => {
          const values = (s.fields?.find(f => f.name === 'avg')?.values as any)?.buffer
          
-         if (!values) return;
+         if (!values) {return;}
          
          const max = Math.max(...values)
          
@@ -99,6 +99,8 @@ const queryVar = replaceVariables("$selected")
   
     // calculate if any of the floors have people over > 100
     // if so... add the element and maybe zoom, we'll see...
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.series])
   
   
@@ -106,7 +108,7 @@ const queryVar = replaceVariables("$selected")
   useEffect(() => {
     // Fake element ids until we can get the merge tables working
     // or store data from the other series...
-    if (!queryVar || !vp) return;
+    if (!queryVar || !vp) {return;}
     
     const elementIds: Record<string, string> = {
       "Platform": "0x40000000453",
@@ -162,12 +164,16 @@ const queryVar = replaceVariables("$selected")
   const onIModelConnected = useCallback(async (iModel: IModelConnection) => {
     console.log('On connected: ');
     setIModel(iModel);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.series]);
   
   const onViewPortLoaded = useCallback(async (viewport: ScreenViewport) => {
     console.log('On Viewport Loaded: ');
     await SerializeViewApi.loadViewState(viewport)
     setVp(viewport);
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.series]);
 
 
