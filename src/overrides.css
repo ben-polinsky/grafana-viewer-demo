@@ -6,3 +6,7 @@
 .sidemenu-icon::before{
     content: "" !important;
 }
+
+.uifw-widgetPanels-toolbars {
+    visibility: hidden;
+}

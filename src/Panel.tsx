@@ -7,10 +7,51 @@ import "overrides.css"
 
 import { IModelConnection,  StandardViewId, ScreenViewport, EmphasizeElements } from '@itwin/core-frontend';
 import { ColorDef, FeatureOverrideType, FeatureAppearance } from '@itwin/core-common';
-import { BasicNavigationWidget } from '@itwin/appui-react';
+import { BasicNavigationWidgetProvider } from 'widgets/BasicNavigationWidgetProvider';
 import SerializeViewApi from "./serializeViewApi"
 const WrappedViewer = React.memo(Viewer, (props1, newprops) => true)
 
+export const default3DSandboxUi = {
+  contentManipulationTools: {
+    cornerItem: {
+      hideDefault: true,
+    },
+    hideDefaultHorizontalItems: true,
+    hideDefaultVerticalItems: true,
+    verticalItems: {
+      sectionTools: false,
+      measureTools: false,
+      selectTool: false,
+    },
+    horizontalItems: {
+      clearSelection: false,
+      clearHideIsolateEmphasizeElements: false,
+      isolateElements: false,
+      hideElements: false,
+      emphasizeElements: false,
+    },
+  },
+  navigationTools: {
+    hideDefaultHorizontalItems: true,
+    hideDefaultVerticalItems: true,
+    verticalItems: {
+      walkView: true,
+      cameraView: true,
+    },
+    horizontalItems: {
+      rotateView: true,
+      panView: true,
+      fitView: true,
+      windowArea: true,
+      undoView: true,
+      redoView: true,
+    },
+  },
+  hideDefaultStatusBar: true,
+  hidePropertyGrid: true,
+  hideToolSettings: true,
+  hideTreeView: true,
+};
 
 interface Props extends PanelProps<PanelOptions> {}
 
@@ -172,7 +213,7 @@ const queryVar = replaceVariables("$selected")
     console.log('On Viewport Loaded: ');
     await SerializeViewApi.loadViewState(viewport)
     setVp(viewport);
-    
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.series]);
 
@@ -183,16 +224,16 @@ const queryVar = replaceVariables("$selected")
       <p>Please set all panel options.</p>
     </div>
   } else if (token) {
-    return <><WrappedViewer
+    return <WrappedViewer
       authClient={authClient}
       iTwinId={options.iTwinId}
       iModelId={options.iModelId}
       enablePerformanceMonitors={true}
       onIModelConnected={onIModelConnected}
       viewCreatorOptions={{viewportConfigurer: async (vp: ScreenViewport) => {onViewPortLoaded(vp)}}}
+      uiProviders={[new BasicNavigationWidgetProvider()]}
+      defaultUiConfig={default3DSandboxUi}
     />
-    {iModel && <BasicNavigationWidget />}
-    </>
   } else {
     return <p>Logging in..</p>
   }
