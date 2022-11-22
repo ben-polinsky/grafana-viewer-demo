@@ -9,7 +9,7 @@ import { IModelConnection,  StandardViewId, ScreenViewport, EmphasizeElements } 
 import { ColorDef, FeatureOverrideType, FeatureAppearance } from '@itwin/core-common';
 import { BasicNavigationWidget } from '@itwin/appui-react';
 import SerializeViewApi from "./serializeViewApi"
-const WrappedViewer = React.memo(Viewer, (props1, newprops) => true)
+const WrappedViewer = React.memo(Viewer, (oldProps, newProps) => true)
 
 
 interface Props extends PanelProps<PanelOptions> {}
@@ -19,7 +19,7 @@ export const Panel: React.FC<Props> = React.memo(({ options, data, width, height
 
 const green = ColorDef.fromString("rgba(29, 193, 29, 0.8)");
 const orange  = ColorDef.fromString("rgba(255, 193, 29, 0.8)");
-const lightGrey = ColorDef.fromString("rgba(245,245,245,.05)");
+const lightGrey = ColorDef.fromString("rgba(245,245,245, .15)");
 
 const [iModel, setIModel] = React.useState<IModelConnection>();
 const [vp, setVp] = React.useState<ScreenViewport>();
@@ -32,8 +32,6 @@ const colorMap: Record<string, Array<string>> = {
 
 const queryVar = replaceVariables("$selected")
 
-  // We probably want to do a whole round... and then zoom to all or a specific view..
-  // if only one exists we'll zoom there.. as noted below.. maybe just highlight by color
   useEffect(() => {
     console.log("New data received");
       if (vp && iModel && data.state === "Done")  {
@@ -74,7 +72,7 @@ const queryVar = replaceVariables("$selected")
                        
            if (!colorMap[colorIndex].includes(id)){
               colorMap[colorIndex].push(id)
-           } // should probably remove from other places but will leave it until multiple are shown
+           } // todo: remove elements from other color entries
              
           const provider = EmphasizeElements.getOrCreate(vp)
           provider.emphasizeElements(colorMap[colorIndex], vp);
@@ -84,15 +82,9 @@ const queryVar = replaceVariables("$selected")
 
           provider.emphasizeElements(colorMap[colorIndex], vp, FeatureAppearance.fromRgba(lightGrey));
           provider.overrideElements(colorMap[colorIndex], vp, color, FeatureOverrideType.ColorAndAlpha, true);  
-   
-        //   console.log(viewport.iModel.selectionSet.elements)
-          // vp.zoomToElements(id, { animateFrustumChange: true, standardViewId: StandardViewId.Top }).then(res => {
-          //   console.log("zoomewd")
-          // })
-          
-        //   console.log("after zoom:")
-        //   console.log(viewport.iModel.selectionSet.elements)
-        }   
+        
+        }
+        // else could revert/decolorize element/area
   
        })
       }
@@ -168,6 +160,7 @@ const queryVar = replaceVariables("$selected")
     console.log('On Viewport Loaded: ');
     await SerializeViewApi.loadViewState(viewport)
     setVp(viewport);
+    viewport.view.viewFlags = viewport.viewFlags.with("backgroundMap", true);
   }, [data.series]);
 
 
@@ -184,6 +177,7 @@ const queryVar = replaceVariables("$selected")
       enablePerformanceMonitors={true}
       onIModelConnected={onIModelConnected}
       viewCreatorOptions={{viewportConfigurer: async (vp: ScreenViewport) => {onViewPortLoaded(vp)}}}
+      mapLayerOptions={{BingMaps: {key: "key", value: "AtaeI3QDNG7Bpv1L53cSfDBgBKXIgLq3q-xmn_Y2UyzvF-68rdVxwAuje49syGZt"}}}
     />
     {iModel && <BasicNavigationWidget />}
     </>

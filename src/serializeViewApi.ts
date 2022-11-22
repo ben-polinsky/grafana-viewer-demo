@@ -192,7 +192,7 @@ const hardcodedViewJSON = {
             "name": "Bing Maps: Aerial Imagery with labels",
             "visible": true,
             "transparentBackground": false,
-            "url": "https://dev.virtualearth.net/REST/v1/Imagery/Metadata/AerialWithLabels?o=json&incl=ImageryProviders&key={bingKey}",
+            "url": "https://dev.virtualearth.net/REST/v1/Imagery/Metadata/AerialWithLabels?o=json&incl=ImageryProviders&key=AtaeI3QDNG7Bpv1L53cSfDBgBKXIgLq3q-xmn_Y2UyzvF-68rdVxwAuje49syGZt",
             "formatId": "BingMaps"
           }
         },
