@@ -9,6 +9,7 @@ import { IModelConnection,  StandardViewId, ScreenViewport, EmphasizeElements } 
 import { ColorDef, FeatureOverrideType, FeatureAppearance } from '@itwin/core-common';
 import { BasicNavigationWidget } from '@itwin/appui-react';
 import SerializeViewApi from "./serializeViewApi"
+import { default3DSandboxUi } from 'common/UiConfig';
 const WrappedViewer = React.memo(Viewer, (oldProps, newProps) => true)
 
 
@@ -182,6 +183,7 @@ const queryVar = replaceVariables("$selected")
       onIModelConnected={onIModelConnected}
       viewCreatorOptions={{viewportConfigurer: async (vp: ScreenViewport) => {onViewPortLoaded(vp)}}}
       mapLayerOptions={{BingMaps: {key: "key", value: "AtaeI3QDNG7Bpv1L53cSfDBgBKXIgLq3q-xmn_Y2UyzvF-68rdVxwAuje49syGZt"}}}
+      defaultUiConfig={default3DSandboxUi}
     />
     {iModel && <BasicNavigationWidget />}
     </>
