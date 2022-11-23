@@ -7,7 +7,7 @@
     content: "" !important;
 }
 
-.uifw-widgetPanels-toolbars {
+/*.uifw-widgetPanels-toolbars {
     visibility: hidden;
 }
 
@@ -16,4 +16,4 @@ div.nz-widget-navigationArea{
     top: 80px;
     right: 10px;
     width: auto;
-}
+}*/
