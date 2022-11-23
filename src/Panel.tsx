@@ -12,7 +12,6 @@ import SerializeViewApi from "./serializeViewApi"
 import { default3DSandboxUi } from 'common/UiConfig';
 const WrappedViewer = React.memo(Viewer, (oldProps, newProps) => true)
 
-
 interface Props extends PanelProps<PanelOptions> {}
 
 // eslint-disable-next-line react/display-name
@@ -94,7 +93,7 @@ const queryVar = replaceVariables("$selected")
     // if so... add the element and maybe zoom, we'll see...
     
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.series])
+  }, [data.series, vp, iModel, data.state, green, orange, lightGrey])
   
   
   // when a variable is changed
@@ -133,7 +132,7 @@ const queryVar = replaceVariables("$selected")
   );
 
   const login = useCallback(async () => {
-    if (window.location.search.includes('code')) {
+    if (window.location.search.includes('code') && options.redirectUrl) {
       BrowserAuthorizationCallbackHandler.handleSigninCallback(options.redirectUrl).then().catch(console.error);
     } else {
       if (token) {
@@ -147,8 +146,7 @@ const queryVar = replaceVariables("$selected")
         console.error(`issue getting current token will attempt sign in: ${error} `);
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [authClient]);
+  }, [authClient, token, options.redirectUrl]);
 
   useEffect(() => {
     void login();
@@ -157,18 +155,14 @@ const queryVar = replaceVariables("$selected")
   const onIModelConnected = useCallback(async (iModel: IModelConnection) => {
     console.log('On connected: ');
     setIModel(iModel);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.series]);
+  }, []);
   
   const onViewPortLoaded = useCallback(async (viewport: ScreenViewport) => {
     console.log('On Viewport Loaded: ');
     await SerializeViewApi.loadViewState(viewport)
     setVp(viewport);
     viewport.view.viewFlags = viewport.viewFlags.with("backgroundMap", true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.series]);
-
-
+  }, []);
 
   if (Object.values(options).some(v => v === undefined)) {
     return <div>
