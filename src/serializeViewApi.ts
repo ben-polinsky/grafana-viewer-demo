@@ -254,11 +254,11 @@ const hardcodedViewJSON = {
   }
 }
 
-
+/* eslint-disable */
 
 export default class SerializeViewApi {
 
-  public static serializeCurrentViewState(viewport: Viewport): ViewStateProps {
+  static serializeCurrentViewState(viewport: Viewport): ViewStateProps {
     /** Create a deep copy of the view and save its properties */
     const clonedView = viewport.view.clone();
 
@@ -266,7 +266,7 @@ export default class SerializeViewApi {
     return clonedView.toProps();
   }
 
-  public static async deserializeViewState(imodel: IModelConnection, props: ViewStateProps): Promise<ViewState | undefined> {
+  static async deserializeViewState(imodel: IModelConnection, props: ViewStateProps): Promise<ViewState | undefined> {
     /** Grab the type of imodel to reconstruct the view */
     const ctor = await imodel.findClassFor<typeof EntityState>(props.viewDefinitionProps.classFullName, undefined) as typeof ViewState | undefined;
     const viewState = ctor?.createFromProps(props, imodel);
@@ -280,7 +280,7 @@ export default class SerializeViewApi {
     return undefined;
   }
 
-  public static async loadViewState(viewport: Viewport) {
+  static async loadViewState(viewport: Viewport) {
     const view = await this.deserializeViewState(viewport.iModel, hardcodedViewJSON);
     if (undefined !== view) {
       /** Load the saved view */

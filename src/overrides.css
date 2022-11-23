@@ -7,13 +7,13 @@
     content: "" !important;
 }
 
-.uifw-widgetPanels-toolbars {
+/*.uifw-widgetPanels-toolbars {
     visibility: hidden;
 }
 
 div.nz-widget-navigationArea{
     position: absolute;
-    top: 80px;
-    right: 10px;
+    top: 45px;
+    right: 15px;
     width: auto;
-}
+}*/
