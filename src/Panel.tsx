@@ -1,18 +1,39 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { PanelProps } from '@grafana/data';
 import { PanelOptions } from 'common/types';
-import { Viewer, } from '@itwin/web-viewer-react';
+import { Viewer, ViewerStatusbarItemsProvider, ViewerContentToolsProvider,  ViewerNavigationToolsProvider } from '@itwin/web-viewer-react';
 import { BrowserAuthorizationClient, BrowserAuthorizationCallbackHandler } from '@itwin/browser-authorization';
 import "overrides.css"
 
-import { IModelConnection,  StandardViewId, ScreenViewport, EmphasizeElements } from '@itwin/core-frontend';
-import { ColorDef, FeatureOverrideType, FeatureAppearance } from '@itwin/core-common';
-import { BasicNavigationWidget } from '@itwin/appui-react';
+import { ClipPlane, ClipPrimitive, ClipVector, ConvexClipPlaneSet, Plane3dByOriginAndUnitNormal, Point3d, Vector3d } from "@itwin/core-geometry";
+import { IModelApp, IModelConnection,  StandardViewId, StandardViewTool, ScreenViewport, EmphasizeElements, FitViewTool } from '@itwin/core-frontend';
+import { Presentation } from "@itwin/presentation-frontend";
+import { ColorDef, FeatureOverrideType, FeatureAppearance, QueryRowFormat  } from '@itwin/core-common';
+//import { BasicNavigationWidget } from '@itwin/appui-react';
 import SerializeViewApi from "./serializeViewApi"
-import { default3DSandboxUi } from 'common/UiConfig';
+import {
+  MeasureTools,
+  MeasureToolsUiItemsProvider,
+} from "@itwin/measure-tools-react";
+import {
+  PropertyGridManager,
+  PropertyGridUiItemsProvider,
+} from "@itwin/property-grid-react";
+import {
+  TreeWidget,
+  TreeWidgetUiItemsProvider,
+} from "@itwin/tree-widget-react";
 const WrappedViewer = React.memo(Viewer, (oldProps, newProps) => true)
+/* eslint-disable */
 
 interface Props extends PanelProps<PanelOptions> {}
+interface Story {
+  name: string;
+  description: string;
+  levelNumber: number;
+  bottomElevation: number;
+  topElevation: number;
+}
 
 // eslint-disable-next-line react/display-name
 export const Panel: React.FC<Props> = React.memo(({ options, data, width, height, replaceVariables }) => {
@@ -39,7 +60,9 @@ const queryVar = replaceVariables("$selected")
        data.series.forEach(s => {
          const values = (s.fields?.find(f => f.name === 'avg')?.values as any)?.buffer
          
-         if (!values) {return;}
+         if (!values) {
+           return;
+         }
          
          const max = Math.max(...values)
          
@@ -98,23 +121,140 @@ const queryVar = replaceVariables("$selected")
   
   // when a variable is changed
   useEffect(() => {
-    // Fake element ids until we can get the merge tables working
-    // or store data from the other series...
-    if (!queryVar || !vp) {return;}
-    
-    const elementIds: Record<string, string> = {
-      "Platform": "0x40000000453",
-      "Street Level": "0x1e000000040b",
-      "Traveler Space": "0x1e000000040c"
-    }
-    const queriedId = elementIds[queryVar]
-    if (queriedId){
-      vp.zoomToElements(queriedId, { animateFrustumChange: true, standardViewId: StandardViewId.Front }).then(res => {
-        console.log("zoomewd")
-      })
-    }
+    const refocus = async () => {
+      // Fake element ids until we can get the merge tables working
+      // or store data from the other series...
+      if (!queryVar || !vp) return;
+      
+      // const elementIds: Record<string, string> = {
+      //   "Platform": "0x40000000453",
+      //   "Street Level": "0x1e000000040b",
+      //   "Traveler Space": "0x1e000000040c"
+      // }
+            
+      const floors: Record<string, number> = {
+        "Platform": 0,
+        "Street Level": 3,
+        "Traveler Space": 1
+      }
+
+      //const queriedId = elementIds[queryVar];
+      const floor = floors[queryVar];
+      //if (queriedId){
+        if (floor !== undefined) {
+          const stories = await getLevels(vp.iModel);
+          await changeViewForModel(stories[floor]);
+        } else {
+          vp.view.setViewClip();
+        }
+        
+//        vp.iModel.selectionSet.replace(queriedId);
+//        vp.zoomToElements(queriedId, { animateFrustumChange: true, standardViewId: StandardViewId.Iso }).then(res => {
+//          console.log("zoomewd")
+//        })
+      //}
+    };
+    refocus().catch(console.error);
       
   }, [queryVar, vp])
+  
+    
+  const changeViewForModel = async (level: Story) => {
+    const vp = IModelApp.viewManager.selectedView!;
+    if (!vp)
+      return;
+  
+    const imodel = vp.iModel;
+    const viewState = vp.view;
+  
+    const planeSet = ConvexClipPlaneSet.createEmpty();
+    createPlane(planeSet, level.bottomElevation, false);
+    createPlane(planeSet, level.topElevation, true);
+  
+    const prim = ClipPrimitive.createCapture(planeSet);
+    const clip = ClipVector.createEmpty();
+    clip.appendReference(prim);
+    viewState.viewFlags = viewState.viewFlags.with("clipVolume", true);
+    viewState.setViewClip(clip);
+  
+    //viewState.viewFlags = viewState.viewFlags.with("backgroundMap", true);
+  
+    // Wait for all the asynchronous stuff before we start changing the viewport.
+    // Otherwise we might see some of the changes before they are all applied.
+    const categoryIds = await getCategoriesToTurnOff(imodel);
+  
+    vp.applyViewState(viewState);
+    //vp.changeCategoryDisplay(categoryIds, false);
+  
+    // Need a way to re-render the scene
+    vp.invalidateDecorations();
+    requestAnimationFrame(() => { });
+  };
+  
+  const createPlane = (planeSet: ConvexClipPlaneSet, z: number, top: boolean) => {
+    const topPlaneOffset = -1.0;
+    const botPlaneOffset = -1.0;
+    const normal = Vector3d.create(0, 0, top ? -1.0 : 1.0);
+    const origin = Point3d.create(0, 0, top ? z + topPlaneOffset : z + botPlaneOffset);
+  
+    const plane = Plane3dByOriginAndUnitNormal.create(origin, normal);
+    if (undefined === plane)
+      return;
+  
+    planeSet.addPlaneToConvexSet(ClipPlane.createPlane(plane));
+  };
+    
+  const getCategoriesToTurnOff = async (imodel: IModelConnection) => {
+    const categoryNames = ["FILL_Mesh", "SM_Mesh", "CL_Mesh", "SP-SM_Mesh", "GP_Mesh",
+      "S-PILE-CONC", "li_building_footprints", "e_terrain_exterior", "completestreets",
+      "A-SITE", "A-SITE-EARTH", "a-flor-otln", "neighborhoods_philadelphia",
+      "GP", "boreholes_interpretation", "boreholes_interpretation_decoration", "boreholes",
+      "Boreholes_Interpretation_Decoration", "CL", "IoTDeviceSpatialCategory",
+      "A-Reserved Retail Area", "A-Reserved Retail Area",
+      "SM", "boreholes_decoration", "SP-SM", "FILL"];
+  
+    let query = `SELECT ECInstanceId, UserLabel FROM bis.category WHERE`;
+    categoryNames.forEach((catName, index) => {
+      if (0 !== index)
+        query += ` or`;
+      query += ` codeValue = '${catName}'`;
+    });
+  
+    const rows = [];
+    for await (const row of imodel.query(query))
+      rows.push(row);
+  
+    return rows.map((row) => { return row[0]; });
+  };
+    
+   const getLevels = async (imodel: IModelConnection): Promise<Story[]> => {
+      const query = `select distinct Round(LEVEL_ELEV, 5) as LEVEL_ELEV, DATUM_TEXT from RevitDynamic.level ORDER BY LEVEL_ELEV`;
+      const rows = [];
+      try {
+        let i = 0;
+        for await (const row of imodel.query(query, undefined, { rowFormat: QueryRowFormat.UseJsPropertyNames }))
+          rows.push({ name: row.dATUM_TEXT, levelNumber: i++, description: row.dATUM_TEXT, LEVEL_ELEV: row.lEVEL_ELEV });
+      } catch (error) {
+        console.error(error);
+      }
+  
+      const stories: Story[] = [];
+      rows.forEach((row, index, allRows) => {
+        let bottomElev: number;
+        if (index === allRows.length - 1) {
+          bottomElev = Number.MAX_SAFE_INTEGER;
+        } else
+          bottomElev = allRows[index + 1].LEVEL_ELEV;
+  
+        if (index === 0) {
+          stories.push({ name: "B1-PLATFORM", levelNumber: allRows.length + 1, description: "below bottom", bottomElevation: Number.MIN_SAFE_INTEGER, topElevation: row.LEVEL_ELEV - 4.3 });
+        }
+  
+        stories.push({ name: row.name, levelNumber: allRows.length - row.levelNumber, description: row.description, bottomElevation: row.LEVEL_ELEV, topElevation: bottomElev });
+      });
+  
+      return stories;
+    }
 
   const [token, setToken] = useState<string>('');
 
@@ -161,7 +301,17 @@ const queryVar = replaceVariables("$selected")
     console.log('On Viewport Loaded: ');
     await SerializeViewApi.loadViewState(viewport)
     setVp(viewport);
-    viewport.view.viewFlags = viewport.viewFlags.with("backgroundMap", true);
+    //viewport.view.viewFlags = viewport.viewFlags.with("backgroundMap", true);
+    IModelApp.tools.run(StandardViewTool.toolId, vp, StandardViewId.RightIso);
+    IModelApp.tools.run(FitViewTool.toolId, viewport, true, false);
+  
+    Presentation.selection.setSyncWithIModelToolSelection(viewport.iModel, true);
+  }, []);
+
+  const onIModelAppInit = useCallback(async () => {
+    await TreeWidget.initialize();
+    await PropertyGridManager.initialize();
+    await MeasureTools.startup();
   }, []);
 
   if (Object.values(options).some(v => v === undefined)) {
@@ -175,11 +325,24 @@ const queryVar = replaceVariables("$selected")
       iModelId={options.iModelId}
       enablePerformanceMonitors={true}
       onIModelConnected={onIModelConnected}
+      onIModelAppInit={onIModelAppInit}
       viewCreatorOptions={{viewportConfigurer: async (vp: ScreenViewport) => {onViewPortLoaded(vp)}}}
-      mapLayerOptions={{BingMaps: {key: "key", value: "AtaeI3QDNG7Bpv1L53cSfDBgBKXIgLq3q-xmn_Y2UyzvF-68rdVxwAuje49syGZt"}}}
-      defaultUiConfig={default3DSandboxUi}
+      //mapLayerOptions={{BingMaps: {key: "key", value: "AtaeI3QDNG7Bpv1L53cSfDBgBKXIgLq3q-xmn_Y2UyzvF-68rdVxwAuje49syGZt"}}}
+      uiProviders={[
+          new ViewerNavigationToolsProvider(),
+          new ViewerContentToolsProvider({
+            vertical: {
+              measureGroup: false,
+            },
+          }),
+          new ViewerStatusbarItemsProvider(),
+          new TreeWidgetUiItemsProvider(),
+          new PropertyGridUiItemsProvider({
+            enableCopyingPropertyText: true,
+          }),
+          new MeasureToolsUiItemsProvider(),
+        ]}
     />
-    {iModel && <BasicNavigationWidget />}
     </>
   } else {
     return <p>Logging in..</p>

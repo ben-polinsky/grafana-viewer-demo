@@ -254,7 +254,7 @@ const hardcodedViewJSON = {
   }
 }
 
-
+/* eslint-disable */
 
 export default class SerializeViewApi {
 
