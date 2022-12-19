@@ -9,6 +9,7 @@ import { ClipPlane, ClipPrimitive, ClipVector, ConvexClipPlaneSet, Plane3dByOrig
 import { IModelApp, IModelConnection,  StandardViewId, StandardViewTool, ScreenViewport, EmphasizeElements, FitViewTool } from '@itwin/core-frontend';
 import { Presentation } from "@itwin/presentation-frontend";
 import { ColorDef, FeatureOverrideType, FeatureAppearance, QueryRowFormat  } from '@itwin/core-common';
+import { UnexpectedErrors  } from '@itwin/core-bentley';
 //import { BasicNavigationWidget } from '@itwin/appui-react';
 import SerializeViewApi from "./serializeViewApi"
 import {
@@ -35,6 +36,44 @@ interface Story {
   topElevation: number;
 }
 
+type AlarmState =
+  | "Active"
+  | "Normal"
+  | "Acknowledged"
+  | "Latched"
+  | "Snoozed"
+  | "Disabled";
+
+  interface Alarm {
+    entityId: string
+    state: AlarmState | null
+    prevState: AlarmState | null
+  }
+  
+  const alarmOne = {
+    entityId: "2a82564b-e2a6-470d-a906-c36e5d67a173",
+    state: null,
+    prevState: null
+  }
+  
+  const alarmTwo = {
+    entityId: 'e28f846d-7c15-4a08-ae35-02f4d51f661f',
+    state: null,
+    prevState: null
+  }
+  
+  
+UnexpectedErrors.setHandler(UnexpectedErrors.consoleLog);
+
+window.addEventListener("keydown", (e) => {
+  console.log("FIRED")
+  if (e.key === "r") {
+    console.log("RESETTING");
+    IModelApp.viewManager.selectedView?.view.setViewClip(); 
+  }
+});
+
+    
 // eslint-disable-next-line react/display-name
 export const Panel: React.FC<Props> = React.memo(({ options, data, width, height, replaceVariables }) => {
 
@@ -44,6 +83,9 @@ const lightGrey = ColorDef.fromString("rgba(245,245,245, .15)");
 
 const [iModel, setIModel] = React.useState<IModelConnection>();
 const [vp, setVp] = React.useState<ScreenViewport>();
+const [CMA_01, setCMA_01] = React.useState<Alarm>(alarmOne);
+const [CMA_02, setCMA_02] = React.useState<Alarm>(alarmTwo);
+
 const colorMap: Record<string, string[]> = {
   [ColorDef.red.toRgbaString()]: [],
   [ColorDef.blue.toRgbaString()]: [],
@@ -54,9 +96,20 @@ const colorMap: Record<string, string[]> = {
 const queryVar = replaceVariables("$selected")
 
   useEffect(() => {
-    console.log("New data received");
       if (vp && iModel && data.state === "Done")  {
-
+      
+        const newState01 = (data?.series[6]?.fields[0]?.values as any)?.buffer[0]
+        
+        if (CMA_01.prevState !== newState01){
+          console.log(`ALARM 01 state updated to: ${newState01}}`)
+        };
+        
+        const newState02 = (data?.series[7]?.fields[0]?.values as any)?.buffer[0]
+        
+        if (CMA_02.prevState !== newState02){
+          console.log(`ALARM 02 state updated to ${newState02}`);
+        };
+    
        data.series.forEach(s => {
          const values = (s.fields?.find(f => f.name === 'avg')?.values as any)?.buffer
          
@@ -118,6 +171,7 @@ const queryVar = replaceVariables("$selected")
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.series, vp, iModel, data.state, green, orange, lightGrey])
   
+ 
   
   // when a variable is changed
   useEffect(() => {
@@ -133,25 +187,41 @@ const queryVar = replaceVariables("$selected")
       // }
             
       const floors: Record<string, number> = {
-        "Platform": 0,
-        "Street Level": 3,
-        "Traveler Space": 1
+        "c13994ce-af39-40ed-864c-5ed556b68b2b": 0, // Platform
+        "ca65fce7-fd72-41b1-a810-376b3ba33429": 3, // street level
+        "d4cde28d-ee91-48f2-964a-c41f0cdbb762": 1 // traveler space
+      }
+      
+      // data normalization is not ideal so let's
+      // cheat. Just know that we _could_ find the elementIds
+      // from the data if we needed to...
+      
+      const alarms: Record<string, string> = {
+        '2a82564b-e2a6-470d-a906-c36e5d67a173': '0xa00000005f9', // alarm one
+        'e28f846d-7c15-4a08-ae35-02f4d51f661f': '0xa00000005b1' // alarm two
       }
 
       //const queriedId = elementIds[queryVar];
       const floor = floors[queryVar];
+      const alarm = alarms[queryVar];
       //if (queriedId){
         if (floor !== undefined) {
           const stories = await getLevels(vp.iModel);
           await changeViewForModel(stories[floor]);
+        } else if (alarm !== undefined) {
+          vp.view.setViewClip();
+          vp.iModel.selectionSet.replace(alarm);
+          vp.zoomToElements(alarm, { animateFrustumChange: true, standardViewId: StandardViewId.Iso, marginPercent: { bottom: 0.1, top: 0.1, left: 0.1, right: 0.1} }).then(res => {
+           console.log("zoomers");
+          })
+
+          const provider = EmphasizeElements.getOrCreate(vp)
+          provider.emphasizeElements(alarm, vp);
         } else {
           vp.view.setViewClip();
         }
         
-//        vp.iModel.selectionSet.replace(queriedId);
-//        vp.zoomToElements(queriedId, { animateFrustumChange: true, standardViewId: StandardViewId.Iso }).then(res => {
-//          console.log("zoomewd")
-//        })
+
       //}
     };
     refocus().catch(console.error);
@@ -273,7 +343,8 @@ const queryVar = replaceVariables("$selected")
 
   const login = useCallback(async () => {
     if (window.location.search.includes('code') && options.redirectUrl) {
-      BrowserAuthorizationCallbackHandler.handleSigninCallback(options.redirectUrl).then().catch(console.error);
+      console.log("REDIRECTING!")
+      BrowserAuthorizationCallbackHandler.handleSigninCallback(options.redirectUrl).catch(console.error);
     } else {
       if (token) {
         return;
