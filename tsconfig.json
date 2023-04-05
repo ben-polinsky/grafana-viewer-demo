@@ -4,6 +4,7 @@
   "compilerOptions": {
     "rootDir": "./src",
     "baseUrl": "./src",
+    "jsx": "react-jsx",
     "typeRoots": ["./node_modules/@types"],
     "noUnusedLocals": false
   }
