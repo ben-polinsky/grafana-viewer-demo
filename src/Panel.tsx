@@ -51,76 +51,77 @@ const colorMap: Record<string, string[]> = {
   [green.toRgbaString()]: []
 }
 
-const queryVar = replaceVariables("$selected")
+const queryVar = replaceVariables("$iTwinElementId")
 
   useEffect(() => {
     console.log("New data received");
-      if (vp && iModel && data.state === "Done")  {
+    //   if (vp && iModel && data.state === "Done")  {
 
-       data.series.forEach(s => {
-         const values = (s.fields?.find(f => f.name === 'avg')?.values as any)?.buffer
+    //   data.series.forEach(s => {
+    //     const values = (s.fields?.find(f => f.name === 'avg')?.values as any)?.buffer
          
-         if (!values) {
-           return;
-         }
+    //     if (!values) {
+    //       return;
+    //     }
          
-         const max = Math.max(...values)
+    //     const max = Math.max(...values)
          
-         if (max > 0) {
-           let color;
+    //     if (max > 0) {
+    //       let color;
            
-           if (max > 125){
-              console.log(`${s.name} is activated with a color of red`)
+    //       if (max > 125){
+    //           console.log(`${s.name} is activated with a color of red`)
         
-              color = ColorDef.red;
-           } else if (max > 100) {
-              console.log(`${s.name} is activated with a color of blue`)
+    //           color = ColorDef.red;
+    //       } else if (max > 100) {
+    //           console.log(`${s.name} is activated with a color of blue`)
        
-              color = ColorDef.blue;
-           } else if (max > 75) {
-             console.log(`${s.name} is activated with a color of orange`)
+    //           color = ColorDef.blue;
+    //       } else if (max > 75) {
+    //         console.log(`${s.name} is activated with a color of orange`)
            
-             color = orange;
-           } else {
-             console.log(`${s.name} is activated with a color of green`)
-             color = green;
-           } 
+    //         color = orange;
+    //       } else {
+    //         console.log(`${s.name} is activated with a color of green`)
+    //         color = green;
+    //       } 
    
-           // find element id
-           const idSeries = data.series.find(_s => _s.name && s.name !== _s.name && s.name?.includes(_s.name))
-           console.log(idSeries)
-           const id = (idSeries?.fields?.find(f => f.name === "elementId")?.values as any)?.buffer[0]
-           console.log(`elementId is ${id}`)
-           const colorIndex = color.toRgbaString();
+    //       // find element id
+    //       const idSeries = data.series.find(_s => _s.name && s.name !== _s.name && s.name?.includes(_s.name))
+    //       console.log(idSeries)
+    //       const id = (idSeries?.fields?.find(f => f.name === "elementId")?.values as any)?.buffer[0]
+    //       console.log(`elementId is ${id}`)
+    //       const colorIndex = color.toRgbaString();
                        
-           if (!colorMap[colorIndex].includes(id)){
-              colorMap[colorIndex].push(id)
-           } // todo: remove elements from other color entries
+    //       if (!colorMap[colorIndex].includes(id)){
+    //           colorMap[colorIndex].push(id)
+    //       } // todo: remove elements from other color entries
              
-          const provider = EmphasizeElements.getOrCreate(vp)
-          provider.emphasizeElements(colorMap[colorIndex], vp);
+    //       const provider = EmphasizeElements.getOrCreate(vp)
+    //       provider.emphasizeElements(colorMap[colorIndex], vp);
      
      
-          vp.iModel.selectionSet.add(id); // questionable here
+    //       vp.iModel.selectionSet.add(id); // questionable here
 
-          provider.emphasizeElements(colorMap[colorIndex], vp, FeatureAppearance.fromRgba(lightGrey));
-          provider.overrideElements(colorMap[colorIndex], vp, color, FeatureOverrideType.ColorAndAlpha, true);  
+    //       provider.emphasizeElements(colorMap[colorIndex], vp, FeatureAppearance.fromRgba(lightGrey));
+    //       provider.overrideElements(colorMap[colorIndex], vp, color, FeatureOverrideType.ColorAndAlpha, true);  
         
-        }
-        // else could revert/decolorize element/area
+    //     }
+    //     // else could revert/decolorize element/area
   
-       })
-      }
+    //   })
+    //   }
   
-    // calculate if any of the floors have people over > 100
-    // if so... add the element and maybe zoom, we'll see...
+    // // calculate if any of the floors have people over > 100
+    // // if so... add the element and maybe zoom, we'll see...
     
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.series, vp, iModel, data.state, green, orange, lightGrey])
   
   
   // when a variable is changed
   useEffect(() => {
+    console.log(`Got query var as ${queryVar}`)
     const refocus = async () => {
       // Fake element ids until we can get the merge tables working
       // or store data from the other series...
@@ -132,26 +133,26 @@ const queryVar = replaceVariables("$selected")
       //   "Traveler Space": "0x1e000000040c"
       // }
             
-      const floors: Record<string, number> = {
-        "Platform": 0,
-        "Street Level": 3,
-        "Traveler Space": 1
-      }
+      // const floors: Record<string, number> = {
+      //   "Platform": 0,
+      //   "Street Level": 3,
+      //   "Traveler Space": 1
+      // }
 
-      //const queriedId = elementIds[queryVar];
-      const floor = floors[queryVar];
-      //if (queriedId){
-        if (floor !== undefined) {
-          const stories = await getLevels(vp.iModel);
-          await changeViewForModel(stories[floor]);
-        } else {
-          vp.view.setViewClip();
-        }
+      // //const queriedId = elementIds[queryVar];
+      // const floor = floors[queryVar];
+      // //if (queriedId){
+      //   if (floor !== undefined) {
+      //     const stories = await getLevels(vp.iModel);
+      //     await changeViewForModel(stories[floor]);
+      //   } else {
+      //     vp.view.setViewClip();
+      //   }
         
-//        vp.iModel.selectionSet.replace(queriedId);
-//        vp.zoomToElements(queriedId, { animateFrustumChange: true, standardViewId: StandardViewId.Iso }).then(res => {
-//          console.log("zoomewd")
-//        })
+        vp.iModel.selectionSet.replace(queryVar);
+        vp.zoomToElements(queryVar, { animateFrustumChange: true, standardViewId: StandardViewId.Iso }).then(res => {
+          console.log("zoomewd")
+        })
       //}
     };
     refocus().catch(console.error);
@@ -182,7 +183,7 @@ const queryVar = replaceVariables("$selected")
     // Wait for all the asynchronous stuff before we start changing the viewport.
     // Otherwise we might see some of the changes before they are all applied.
     const categoryIds = await getCategoriesToTurnOff(imodel);
-  
+  console.log(categoryIds);
     vp.applyViewState(viewState);
     //vp.changeCategoryDisplay(categoryIds, false);
   
@@ -301,7 +302,7 @@ const queryVar = replaceVariables("$selected")
     console.log('On Viewport Loaded: ');
     await SerializeViewApi.loadViewState(viewport)
     setVp(viewport);
-    //viewport.view.viewFlags = viewport.viewFlags.with("backgroundMap", true);
+    viewport.view.viewFlags = viewport.viewFlags.with("backgroundMap", true);
     IModelApp.tools.run(StandardViewTool.toolId, vp, StandardViewId.RightIso);
     IModelApp.tools.run(FitViewTool.toolId, viewport, true, false);
   

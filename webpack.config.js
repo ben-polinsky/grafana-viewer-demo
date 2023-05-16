@@ -12,7 +12,7 @@ module.exports.getWebpackConfig = (config, options) => {
   // config.resolve.alias["@bentley/icons-generic-webfont"] = false
 
   // plugin id from plugin.json
-  const pluginId = 'mattbjordan-demo-';
+  const pluginId = 'benpolinsky-itwin-viewer';
   
   return {
     ...config,
